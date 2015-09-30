@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Text;
 using Newtonsoft.Json.Serialization;
 using Terraria.ID;
@@ -421,6 +422,24 @@ namespace Terraria.Plugins.Common.Hooks {
     }
     #endregion
 
+    #region [Event: Teleport]
+    public event EventHandler<TeleportEventArgs> Teleport;
+
+    protected virtual bool OnTeleport(TeleportEventArgs e) {
+      Contract.Requires<ArgumentNullException>(e != null);
+
+      try {
+        if (this.Teleport != null)
+          this.Teleport(this, e);
+      }
+      catch (Exception ex) {
+        this.ReportEventHandlerException("Teleport", ex);
+      }
+
+      return e.Handled;
+    }
+    #endregion
+
 
     public GetDataHookHandler(TerrariaPlugin plugin, bool invokeTileEditOnChestKill = false, int hookPriority = 0) {
       Contract.Requires<ArgumentNullException>(plugin != null);
@@ -508,7 +527,7 @@ namespace Terraria.Plugins.Common.Hooks {
               e.Handled = this.OnChestPlace(new ChestPlaceEventArgs(player, new DPoint(x, y), (ChestStyle)style));
             } else { // Chest kill
               int tileType = TerrariaUtils.Tiles[x, y].type;
-              if (tileType != TileID.Containers || tileType != TileID.Dressers)
+              if (tileType != TileID.Containers && tileType != TileID.Dressers)
                 break;
 
               if (this.InvokeTileEditOnChestKill)
@@ -595,12 +614,13 @@ namespace Terraria.Plugins.Common.Hooks {
             int signIndex = BitConverter.ToInt16(e.Msg.readBuffer, e.Index);
             int x = BitConverter.ToInt16(e.Msg.readBuffer, e.Index + 2);
             int y = BitConverter.ToInt16(e.Msg.readBuffer, e.Index + 4);
+            string newText;
+            using (MemoryStream stream = new MemoryStream(e.Msg.readBuffer, e.Index + 6, e.Length - 7))
+              newText = new BinaryReader(stream).ReadString();
 
             if (!TerrariaUtils.Tiles.IsValidCoord(x, y) || !Main.tile[x, y].active())
               return;
-
-            string newText = Encoding.UTF8.GetString(e.Msg.readBuffer, e.Index + 10, e.Length - 11);
-
+              
             e.Handled = this.OnSignEdit(new SignEditEventArgs(player, signIndex, new DPoint(x, y), newText));
             break;
           }
@@ -741,7 +761,7 @@ namespace Terraria.Plugins.Common.Hooks {
             if (this.DoorUse == null)
               break;
 
-            byte isOpening = e.Msg.readBuffer[e.Index];
+            byte action = e.Msg.readBuffer[e.Index];
             int x = BitConverter.ToInt16(e.Msg.readBuffer, e.Index + 1);
             int y = BitConverter.ToInt16(e.Msg.readBuffer, e.Index + 3);
 
@@ -754,7 +774,7 @@ namespace Terraria.Plugins.Common.Hooks {
             if (direction == 0)
               actualDirection = Direction.Left;
 
-            e.Handled = this.OnDoorUse(new DoorUseEventArgs(player, new DPoint(x, y), isOpening == 0, actualDirection));
+            e.Handled = this.OnDoorUse(new DoorUseEventArgs(player, new DPoint(x, y), (DoorAction)action, actualDirection));
             break;
           }
           case PacketTypes.PlayerSpawn: {
@@ -842,6 +862,29 @@ namespace Terraria.Plugins.Common.Hooks {
             string deathText = Encoding.UTF8.GetString(e.Msg.readBuffer, e.Index + 6, e.Length - 7);
 
             e.Handled = this.OnPlayerDeath(new PlayerDeathEventArgs(player, direction, dmg, pvp, deathText));
+            break;
+          }
+          case PacketTypes.Teleport: {
+            if (this.Teleport == null)
+              break;
+
+            BitsByte flags = e.Msg.readBuffer[e.Index];
+					  int playerIndex = BitConverter.ToInt16(e.Msg.readBuffer, e.Index + 1);
+            float x = BitConverter.ToSingle(e.Msg.readBuffer, e.Index + 3);
+            float y = BitConverter.ToSingle(e.Msg.readBuffer, e.Index + 7);
+					  Vector2 destLocation = new Vector2(x, y);
+
+            TeleportType tpType = TeleportType.PlayerToPos;
+					  if (flags[0])
+						  tpType = TeleportType.NpcToPos;
+					  if (flags[1]) {
+						  if (flags[0])
+                tpType = TeleportType.Unknown;
+              else
+                tpType = TeleportType.PlayerNearPlayerWormhole;
+            }
+
+            e.Handled = this.OnTeleport(new TeleportEventArgs(player, destLocation, tpType));
             break;
           }
         }

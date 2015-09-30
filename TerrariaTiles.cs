@@ -306,10 +306,12 @@ namespace Terraria.Plugins.Common {
           textureFrameLocation = new DPoint(tile.frameX / textureTileSize.X, tile.frameY / textureTileSize.Y);
           break;
         }
-        case BlockType.DoorOpened: {
+        case BlockType.DoorOpened: 
+        case BlockType.TrapdoorOpen: {
           int textureTileX = tile.frameX / textureTileSize.X;
 
-          if (this.GetDoorDirection(anyTileLocation) == Direction.Right) {
+          if (this.GetDoorDirection(anyTileLocation) == Direction.Right ||
+            this.GetDoorDirection(anyTileLocation) == Direction.Up) {
             originTileLocation = anyTileLocation.OffsetEx(-textureTileX, -(tile.frameY / textureTileSize.Y));
           } else {
             originTileLocation = anyTileLocation.OffsetEx(
@@ -687,6 +689,8 @@ namespace Terraria.Plugins.Common {
           return ItemType.PinkDungeonVase;
         case StatueStyle.ObsidianVase:
           return ItemType.ObsidianVase;
+        case StatueStyle.Shark:
+          return ItemType.SharkStatue;
         default:
           throw new ArgumentException("StatueStyle");
       }
@@ -819,6 +823,14 @@ namespace Terraria.Plugins.Common {
           return ChestStyle.SpookyChest;
         case 47:
           return ChestStyle.GlassChest;
+        case 48:
+          return ChestStyle.MartianChest;
+        case 49:
+          return ChestStyle.MeteoriteChest;
+        case 50:
+          return ChestStyle.GraniteChest;
+        case 51:
+          return ChestStyle.MarbleChest;
         default:
           throw new ArgumentOutOfRangeException("objectStyle");
       }
@@ -882,6 +894,42 @@ namespace Terraria.Plugins.Common {
           return ItemType.HoneyChest;
         case ChestStyle.SteampunkChest:
           return ItemType.SteampunkChest;
+        case ChestStyle.PalmWoodChest:
+          return ItemType.PalmWoodChest;
+        case ChestStyle.MushroomChest:
+          return ItemType.MushroomChest;
+        case ChestStyle.BorealWoodChest:
+          return ItemType.BorealWoodChest;
+        case ChestStyle.SlimeChest:
+          return ItemType.SlimeChest;
+        case ChestStyle.GreenDungeonChest:
+          return ItemType.GreenDungeonChest;
+        case ChestStyle.PinkDungeonChest:
+          return ItemType.PinkDungeonChest;
+        case ChestStyle.BlueDungeonChest:
+          return ItemType.BlueDungeonChest;
+        case ChestStyle.BoneChest:
+          return ItemType.BoneChest;
+        case ChestStyle.CactusChest:
+          return ItemType.CactusChest;
+        case ChestStyle.FleshChest:
+          return ItemType.FleshChest;
+        case ChestStyle.ObsidianChest:
+          return ItemType.ObsidianChest;
+        case ChestStyle.PumpkinChest:
+          return ItemType.PumpkinChest;
+        case ChestStyle.SpookyChest:
+          return ItemType.SpookyChest;
+        case ChestStyle.GlassChest:
+          return ItemType.GlassChest;
+        case ChestStyle.MartianChest:
+          return ItemType.MartianChest;
+        case ChestStyle.MeteoriteChest:
+          return ItemType.MeteoriteChest;
+        case ChestStyle.GraniteChest:
+          return ItemType.GraniteChest;
+        case ChestStyle.MarbleChest:
+          return ItemType.MarbleChest;
         default:
           throw new ArgumentException("ChestStyle");
       }
@@ -940,16 +988,17 @@ namespace Terraria.Plugins.Common {
       ChestStyle chestStyle = this.GetChestStyle(chestTile, out isLocked);
       switch (chestStyle) {
         case ChestStyle.GoldChest:
-          if (isLocked) {
-            if (chestTile.wall >= (int)WallType.DungeonBlueBrickWall && chestTile.wall <= (int)WallType.DungeonPinkBrickWall ||
-                chestTile.wall >= (int)WallType.DungeonBlueSlabWall && chestTile.wall <= (int)WallType.DungeonGreenTiledWall)
-              return ChestKind.DungeonChest;
-          }
+          if (
+            chestTile.wall >= (int)WallType.DungeonBlueBrickWall && chestTile.wall <= (int)WallType.DungeonPinkBrickWall ||
+            chestTile.wall >= (int)WallType.DungeonBlueSlabWall && chestTile.wall <= (int)WallType.DungeonGreenTiledWall
+          )
+            return ChestKind.DungeonChest;
+
           if (chestStyle == ChestStyle.GoldChest && chestTile.wall == (int)WallType.SandstoneBrickWall){
-              if (anyChestTileLocation.Y < Main.worldSurface - 250 || anyChestTileLocation.Y > Main.worldSurface + 50)
-                  return ChestKind.Unknown;
-              else
-                  return ChestKind.PyramidChest;
+            if (anyChestTileLocation.Y < Main.worldSurface - 250 || anyChestTileLocation.Y > Main.worldSurface + 50)
+              return ChestKind.Unknown;
+            else
+              return ChestKind.PyramidChest;
           }
           
           return ChestKind.Unknown;
@@ -970,8 +1019,10 @@ namespace Terraria.Plugins.Common {
         case ChestStyle.CrimsonChest:
         case ChestStyle.CorruptionChest:
           if (isLocked) {
-              if (chestTile.wall >= (int)WallType.DungeonBlueBrickWall && chestTile.wall <= (int)WallType.DungeonPinkBrickWall ||
-                  chestTile.wall >= (int)WallType.DungeonBlueSlabWall && chestTile.wall <= (int)WallType.DungeonGreenTiledWall)
+            if (
+              chestTile.wall >= (int)WallType.DungeonBlueBrickWall && chestTile.wall <= (int)WallType.DungeonPinkBrickWall ||
+              chestTile.wall >= (int)WallType.DungeonBlueSlabWall && chestTile.wall <= (int)WallType.DungeonGreenTiledWall
+            )
               return ChestKind.HardmodeDungeonChest;
           }
           
@@ -1007,13 +1058,14 @@ namespace Terraria.Plugins.Common {
       if (!anyDoorTile.active())
         throw new ArgumentException("The tile is not active.");
       
-      if (anyDoorTile.type == (int)BlockType.DoorClosed)
+      if (anyDoorTile.type == (int)BlockType.DoorClosed
+        || anyDoorTile.type == (int)BlockType.TrapdoorClosed)
         return Direction.Unknown;
 
       if (anyDoorTile.frameX < 36)
-        return Direction.Right;
+        return anyDoorTile.type == (int)BlockType.DoorOpened ? Direction.Right : Direction.Up;
       else
-        return Direction.Left;
+        return anyDoorTile.type == (int)BlockType.DoorOpened ? Direction.Left : Direction.Down;
     }
 
     public HerbStyle GetHerbStyle(int objectStyle) {
@@ -1028,8 +1080,10 @@ namespace Terraria.Plugins.Common {
       DPoint origin = measureData.OriginTileLocation;
 
       if (
-        measureData.BlockType == BlockType.DoorOpened &&
-        this.GetDoorDirection(measureData.OriginTileLocation) == Direction.Left
+        (measureData.BlockType == BlockType.DoorOpened &&
+        this.GetDoorDirection(measureData.OriginTileLocation) == Direction.Left) ||
+        (measureData.BlockType == BlockType.TrapdoorOpen &&
+        this.GetDoorDirection(measureData.OriginTileLocation) == Direction.Down )
       ) {
         origin.Offset(-1, 0);
       }
@@ -1257,7 +1311,7 @@ namespace Terraria.Plugins.Common {
           new DPoint(1, 1), // Rain Cloud
           new DPoint(1, 1), // Frozen Slime Block
           new DPoint(1, 1), // Asphalt Block
-          new DPoint(1, 1), // 
+          new DPoint(1, 1), // CrimsonGrass
           new DPoint(1, 1), // Red Ice Block
           new DPoint(1, 1), // 
           new DPoint(1, 1), // Sunplate Block
@@ -1329,8 +1383,8 @@ namespace Terraria.Plugins.Common {
           new DPoint(1, 1), // AmberGemsparkBlock
           new DPoint(2, 3), // Womannequin
           new DPoint(1, 2), // FireflyinaBottle
-          new DPoint(1, 2), // ?
-          new DPoint(1, 1), // ?
+          new DPoint(1, 2), // LightningBugInaBottle
+          new DPoint(1, 1), // Cog
           new DPoint(1, 1), // StoneSlab
           new DPoint(1, 1), // SandstoneSlab
           new DPoint(6, 3), // BunnyCage
@@ -1340,7 +1394,7 @@ namespace Terraria.Plugins.Common {
           new DPoint(6, 3), // BirdCage
           new DPoint(6, 3), // BlueJayCage
           new DPoint(6, 3), // CardinalCage
-          new DPoint(2, 2), // ?
+          new DPoint(2, 2), // FishBowl
           new DPoint(3, 3), // HeavyWorkBench
           new DPoint(1, 1), // CopperPlating
           new DPoint(3, 2), // SnailCage
@@ -1398,86 +1452,85 @@ namespace Terraria.Plugins.Common {
           new DPoint(2, 3), // AlphabetStatues
           new DPoint(1, 2), // FireworkFountain
           new DPoint(3, 2), // GrasshopperCage
-
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(2, 3), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(2, 3), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(6, 3), // ?
-          new DPoint(6, 3), // ?
-          new DPoint(2, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(2, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(2, 3), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(2, 2), // ?
-          new DPoint(2, 1), // ?
-          new DPoint(1, 5), // ?
-          new DPoint(1, 5), // ?
-          new DPoint(1, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(2, 2), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(3, 2), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(2, 3), // ?
-          new DPoint(2, 2), // ?
-          new DPoint(3, 3), // ?
-          new DPoint(6, 3), // ?
-          new DPoint(6, 3), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
-          new DPoint(1, 1), // ?
+          new DPoint(1, 1), // LivingCursedFire
+          new DPoint(1, 1), // LivingDemonFire
+          new DPoint(1, 1), // LivingFrostFire
+          new DPoint(1, 1), // LivingIchor
+          new DPoint(1, 1), // LivingUltrabrightFire
+          new DPoint(1, 1), // Honeyfall
+          new DPoint(1, 1), // ChlorophyteBrick
+          new DPoint(1, 1), // CrimtaneBrick
+          new DPoint(1, 1), // ShroomitePlating
+          new DPoint(2, 3), // MushroomStatue
+          new DPoint(1, 1), // MartianConduitPlating
+          new DPoint(1, 1), // ChimneySmoke
+          new DPoint(1, 1), // CrimtaneThorns
+          new DPoint(1, 1), // VineRope
+          new DPoint(3, 2), // BewitchingTable
+          new DPoint(3, 2), // AlchemyTable
+          new DPoint(2, 3), // Sundial
+          new DPoint(1, 1), // MarbleBlock
+          new DPoint(6, 3), // GoldBirdCage
+          new DPoint(6, 3), // GoldBunnyCage
+          new DPoint(2, 2), // GoldButterflyCage
+          new DPoint(3, 2), // GoldFrogCage
+          new DPoint(3, 2), // GoldGrasshopperCage
+          new DPoint(3, 2), // GoldMouseCage
+          new DPoint(3, 2), // GoldWormCage
+          new DPoint(1, 1), // SilkRope
+          new DPoint(1, 1), // WebRope
+          new DPoint(1, 1), // Marble
+          new DPoint(1, 1), // Granite
+          new DPoint(1, 1), // GraniteBlock
+          new DPoint(1, 1), // MeteoriteBrick
+          new DPoint(1, 1), // PinkSlimeBlock
+          new DPoint(1, 1), // PeaceCandle
+          new DPoint(1, 1), // WaterDrip
+          new DPoint(1, 1), // LavaDrip
+          new DPoint(1, 1), // HoneyDrip
+          new DPoint(2, 2), // FishingCrate
+          new DPoint(3, 2), // SharpeningStation
+          new DPoint(2, 3), // TargetDummy
+          new DPoint(1, 1), // Bubble
+          new DPoint(1, 1), // PlanterBox
+          new DPoint(1, 1), // LavaMoss
+          new DPoint(1, 1), // VineFlowers
+          new DPoint(1, 1), // LivingMahogany
+          new DPoint(1, 1), // LivingMahoganyLeaves
+          new DPoint(1, 1), // CrystalBlock
+          new DPoint(2, 2), // TrapdoorOpen
+          new DPoint(2, 1), // TrapdoorClosed
+          new DPoint(1, 5), // TallGateClosed
+          new DPoint(1, 5), // TallGateOpen
+          new DPoint(1, 2), // LavaLamp
+          new DPoint(3, 2), // CageEnchantedNightcrawler
+          new DPoint(3, 2), // CageBuggy
+          new DPoint(3, 2), // CageGrubby
+          new DPoint(3, 2), // CageSluggy
+          new DPoint(2, 2), // ItemFrame
+          new DPoint(1, 1), // Sandstone
+          new DPoint(1, 1), // HardenedSand
+          new DPoint(1, 1), // CorruptHardenedSand
+          new DPoint(1, 1), // CrimsonHardenedSand
+          new DPoint(1, 1), // CorruptSandstone
+          new DPoint(1, 1), // CrimsonSandstone
+          new DPoint(1, 1), // HallowHardenedSand
+          new DPoint(1, 1), // HallowSandstone
+          new DPoint(1, 1), // DesertFossil
+          new DPoint(3, 2), // Fireplace
+          new DPoint(3, 2), // Chimney
+          new DPoint(1, 1), // FossilOre
+          new DPoint(1, 1), // LunarOre
+          new DPoint(1, 1), // LunarBrick
+          new DPoint(2, 3), // LunarMonolith
+          new DPoint(2, 2), // Detonator
+          new DPoint(3, 3), // LunarCraftingStation
+          new DPoint(6, 3), // SquirrelOrangeCage
+          new DPoint(6, 3), // SquirrelGoldCage
+          new DPoint(1, 1), // LunarBlockSolar
+          new DPoint(1, 1), // LunarBlockVortex
+          new DPoint(1, 1), // LunarBlockNebula
+          new DPoint(1, 1), // LunarBlockStardust
         };
       }
 
